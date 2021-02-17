@@ -117,7 +117,7 @@ cnts = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
 cnts = imutils.grab_contours(cnts)
 cnts = sorted(cnts, key = cv2.contourArea, reverse = True)[:7]
 
-global imRe, contours
+global answersSheet, contours
 
 for index, c in enumerate(cnts):
     peri = cv2.arcLength(c, True)
@@ -128,13 +128,13 @@ for index, c in enumerate(cnts):
         cv2.drawContours(im, [approx], -1, (0, 255, 0), 2)
         warped = four_point_transform(orig, approx.reshape(4, 2) * ratio)
 
-        imRe = cv2.resize(warped, (595,842))
+        answersSheet = cv2.resize(warped, (595, 842))
 
 
         # Contrast image
-        gray = cv2.cvtColor(imRe, cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(answersSheet, cv2.COLOR_BGR2GRAY)
         # roi = cv2.addWeighted(gray, 2, np.zeros(gray.shape, gray.dtype), 0, 80)
-        im_predict = np.ones((imRe.shape[0], imRe.shape[1]), dtype=np.uint8) * 255
+        im_predict = np.ones((answersSheet.shape[0], answersSheet.shape[1]), dtype=np.uint8) * 255
 
         im_predict = roiExam(im_predict, gray)
         im_predict = cv2.blur(im_predict,(1,1),5)
@@ -151,23 +151,23 @@ for index, c in enumerate(cnts):
             (x, y), r = cv2.minEnclosingCircle(c2)
             center = (int(x), int(y))
             radius = int(r)
-            cv2.circle(imRe, center, int(10), (0, 0, 255), 1)
+            cv2.circle(answersSheet, center, int(10), (0, 0, 255), 1)
 
-            cv2.putText(imRe, f"{((m-len(contours))*-1)+1}",
-        				(260 if x < 300 else 539, int(y)),
-        				cv2.FONT_HERSHEY_SIMPLEX, .5, (0, 0, 255), 1)
+            cv2.putText(answersSheet, f"{((m - len(contours)) * -1) + 1}",
+                        (260 if x < 300 else 539, int(y)),
+                        cv2.FONT_HERSHEY_SIMPLEX, .5, (0, 0, 255), 1)
 
 
-cv2.putText(imRe, f"score: {len(contours)}",
-			(imRe.shape[1] - 120, 80),
-			cv2.FONT_HERSHEY_SIMPLEX, .7, (0, 0, 255), 1)
+cv2.putText(answersSheet, f"score: {len(contours)}",
+            (answersSheet.shape[1] - 120, 80),
+            cv2.FONT_HERSHEY_SIMPLEX, .7, (0, 0, 255), 1)
 
 (w, h), b = cv2.getTextSize(f"score: {len(contours)}",
 							cv2.FONT_HERSHEY_SIMPLEX, .7, 1)
 
-cv2.rectangle(imRe, (imRe.shape[1]-120-10, 80+10),
-			  (imRe.shape[1]-120+w+10, 80-h-10), (0,0,255), 1)
+cv2.rectangle(answersSheet, (answersSheet.shape[1] - 120 - 10, 80 + 10),
+              (answersSheet.shape[1] - 120 + w + 10, 80 - h - 10), (0, 0, 255), 1)
 
 
-cv2.imshow("out", imRe)
+cv2.imshow("out", answersSheet)
 cv2.waitKey(0)
