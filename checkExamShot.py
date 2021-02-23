@@ -6,7 +6,6 @@ import time
 
 answers = pd.read_excel('answerExam.xlsx')
 cap = cv2.VideoCapture("http://10.50.44.49:8080/video")
-# cap = cv2.VideoCapture(0)
 
 
 def order_points(pts):
@@ -108,8 +107,6 @@ def roiExam(im, roi):
     return im
 
 
-# cap = cv2.VideoCapture(0)
-
 def warpSheet(cnts, orig, ratio):
     global answersSheet
     for index, c in enumerate(cnts):
@@ -122,10 +119,12 @@ def warpSheet(cnts, orig, ratio):
             answersSheet = cv2.resize(warped, (595, 842))
             return answersSheet
 
+
 click = 0
+status = ""
+
 while True:
     im = cap.read()[1]
-    cv2.imshow("out2", im)
 
     ratio = im.shape[0] / 800.0
     orig = im.copy()
@@ -139,20 +138,20 @@ while True:
     cnts = sorted(cnts, key=cv2.contourArea, reverse=True)[:7]
     answersSheet = warpSheet(cnts, orig, ratio)
 
-    if answersSheet is not None:
-        print("OK ====== ")
-
+    cv2.putText(im, status, (40, 60), cv2.FONT_HERSHEY_SIMPLEX, .7, (0, 255, 0), 2)
+    cv2.imshow("CAMARA", imutils.resize(im, width=400))
+    cv2.moveWindow("CAMARA", 0, 0)
     key = cv2.waitKey(1)
 
+    global shotImage
     if key == ord('c'):
-        cv2.putText(im, "Check", (40, 60), cv2.FONT_HERSHEY_SIMPLEX, .7, (0, 255, 0), 2)
+        status = "Check"
+        # shotImage = cv2.imread(f"t_image{click}.jpg")
+        ratio = shotImage.shape[0] / 800.0
+        orig = shotImage.copy()
+        shotImage = imutils.resize(shotImage, height=800)
 
-        cv2.imread(f"t_image{click}.jpg")
-        ratio = im.shape[0] / 800.0
-        orig = im.copy()
-        im = imutils.resize(im, height=800)
-
-        gray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(shotImage, cv2.COLOR_BGR2GRAY)
         edged = cv2.Canny(gray, 75, 200)
 
         cnts = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -160,7 +159,7 @@ while True:
         cnts = sorted(cnts, key=cv2.contourArea, reverse=True)[:7]
         answersSheet = warpSheet(cnts, orig, ratio)
 
-        try:
+        if answersSheet is not None:
             # print(answersSheet)
             answerRoi = cv2.cvtColor(answersSheet, cv2.COLOR_BGR2GRAY)
             formSheetResult = np.ones((answersSheet.shape[0], answersSheet.shape[1]), dtype=np.uint8) * 255
@@ -193,20 +192,20 @@ while True:
             cv2.rectangle(answersSheet, (answersSheet.shape[1] - 120 - 10, 80 + 10),
                           (answersSheet.shape[1] - 120 + w + 10, 80 - h - 10), (0, 0, 255), 1)
 
-            # print(score)
+            cv2.imshow('EXAM SHEET', answersSheet)
 
-            cv2.imshow('out', answersSheet)
-
-        except:
-            pass
-
+        else:
+            cv2.putText(im, "Not wrap", (20, 80), cv2.FONT_HERSHEY_SIMPLEX, .7, (0, 255, 0), 2)
 
 
     elif key == ord("w"):
+        status = "Chapture"
         click += 1
-        cv2.putText(im,"Capture", (20, 60),cv2.FONT_HERSHEY_SIMPLEX, .7, (0,255,0), 2)
+        cv2.putText(im, "Capture", (20, 60), cv2.FONT_HERSHEY_SIMPLEX, .7, (0, 255, 0), 2)
         # cv2.imwrite(f"{time.strftime('%H_%M_%S')}.jpg", im)
         cv2.imwrite(f"t_image{click}.jpg", im)
+        shotImage = cv2.imread(f"t_image{click}.jpg")
+        cv2.imshow('CAP IMAGE', shotImage)
 
     elif key == 27:
         break

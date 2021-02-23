@@ -69,11 +69,9 @@ cnts = sorted(cnts, key = cv2.contourArea, reverse = True)[:8]
 
 
 
-global answersSheet, contours
 
 for index, c in enumerate(cnts):
     peri = cv2.arcLength(c, True)
-
     approx = cv2.approxPolyDP(c, 0.01 * peri, True)
 
     if len(approx) == 4 and index == 0:
