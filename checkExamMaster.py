@@ -162,5 +162,5 @@ cv2.putText(answersSheet, f"score: {score}",
 cv2.rectangle(answersSheet, (answersSheet.shape[1] - 120 - 10, 80 + 10),
               (answersSheet.shape[1] - 120 + w + 10, 80 - h - 10), (0, 0, 255), 1)
 
-cv2.imshow("out", answersSheet)
+cv2.imshow("out", resultDilate)
 cv2.waitKey(0)

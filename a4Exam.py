@@ -5,7 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 answers = pd.read_excel('answerExam.xlsx')
-im = cv2.imread('image/2021.jpg')
+im = cv2.imread('image/20210216_095831.jpg')
 
 def order_points(pts):
 
@@ -138,10 +138,10 @@ for index, c in enumerate(cnts):
 
         im_predict = roiExam(im_predict, gray)
         im_predict = cv2.blur(im_predict,(1,1),5)
-        _, im_predict = cv2.threshold(im_predict, 100, 225, cv2.THRESH_BINARY_INV)
+        _, threshold = cv2.threshold(im_predict, 100, 225, cv2.THRESH_BINARY_INV)
 
         kernel = np.ones((5, 5), np.uint8)
-        im_predict = cv2.dilate(im_predict, kernel, iterations=1)
+        im_predict = cv2.dilate(threshold, kernel, iterations=1)
 
         edged = cv2.Canny(im_predict, 75, 200)
         contours = cv2.findContours(edged, cv2.RETR_EXTERNAL,
@@ -169,5 +169,5 @@ cv2.rectangle(answersSheet, (answersSheet.shape[1] - 120 - 10, 80 + 10),
               (answersSheet.shape[1] - 120 + w + 10, 80 - h - 10), (0, 0, 255), 1)
 
 
-cv2.imshow("out", answersSheet)
+cv2.imshow("out", threshold)
 cv2.waitKey(0)
