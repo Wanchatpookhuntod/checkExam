@@ -70,6 +70,16 @@ def warped(im):
             im_pedict = cv2.resize(transform, (595, 842))
             return im_pedict
 
+def rhoTheta(rho, theta):
+    a = np.cos(theta)
+    b = np.sin(theta)
+    x0 = a * rho
+    y0 = b * rho
+    x1 = int(x0 + 1000 * (-b))
+    y1 = int(y0 + 1000 * (a))
+    x2 = int(x0 - 1000 * (-b))
+    y2 = int(y0 - 1000 * (a))
+    return x1, y1, x2,y2
 
 def calculatingDegree(im):
     answersSheet = warped(im)
@@ -78,78 +88,69 @@ def calculatingDegree(im):
     listAns = []
     down = []
     up = []
-
+    listDown = []
+    # dd = []
+    dd = []
     for num in range(25):
         biasRow = int(5.27 * num)
         biasCol = int(num * (5/num) if num != 0 else 0)
         row = 180 + (num*height) + biasRow
         choos = []
-        # print(num)
 
+        d = []
         for ans in range(100, 221, 40):
             col = ans + biasCol
             blank = answersSheet[row:row+height, col:col+width]
 
             blankGray = cv2.cvtColor(blank, cv2.COLOR_BGR2GRAY)
             blankEdges = cv2.Canny(blankGray,50,220)
-            lines = cv2.HoughLines(blankEdges,2,np.pi/180,1)
+            lines = cv2.HoughLines(blankEdges,2,np.pi/180,10)
 
             upStatus = 0
             downStatus = 0
 
-
-
             if lines is not None:
+                dx = []
+                ux = []
                 for line in lines:
                     for rho, theta in line:
-                        a = np.cos(theta)
-                        b = np.sin(theta)
-                        x0 = a*rho
-                        y0 = b*rho
-                        x1 = int(x0 + 1000*(-b))
-                        y1 = int(y0 + 1000*(a))
-                        x2 = int(x0 - 1000*(-b))
-                        y2 = int(y0 - 1000*(a))
+                        x1, y1, x2, y2 = rhoTheta(rho, theta)
 
                         if (x1 < 0 and y1 < 0) and (x2 > 0 and y2 > 0):
-                            downStatus += 1
-                            if downStatus < 2:
-                                p1, p2 = (x1, y1), (x2, y2)
-                                slantDown = round(90-math.degrees(math.atan2(x2, y2)))
-                            p1, p2 = (x1, y1), (x2, y2)
-                            down.append([p1, p2])
+                            slantDown = round(90-math.degrees(math.atan2(x2, y2)))
+
+                            if 10 < slantDown < 75:
+                                pDown1, pDown2 = (x1, y1), (x2, y2)
+                                dx.append([pDown1, pDown2])
+
+
                         elif (x1 < 0 < y1) and (x2 > 0 > y2):
-                            upStatus += 1
-                            if upStatus < 2:
-                                p1, p2 = (x1, y1), (x2, y2)
-                                slantUp = round(math.degrees(math.atan2(x1, y1))+90)
-                            p1, p2 = (x1, y1), (x2, y2)
-                            up.append([p1,p2])
+                            slantUP = round(math.degrees(math.atan2(x1, y1))+90)
+
+                            if 10 < slantUP < 75:
+                                pUp1, pUp2 = (x1, y1), (x2, y2)
+                                ux.append([pUp1, pUp2])
+
                         else:
-                            p1, p2 = None, None
-                        cv2.line(im,p1, p2,(0,0,255),2)
+                            p1 = []
+                            p2 = []
 
-                slantDown = 0
+                    if len(sorted(dx)) > 0:
+                        pDown1New, pDown2New = sorted(dx[0])
+                    if len(sorted(dx)) > 0:
+                        pUp1New, pUp2New = sorted(dx[0])
             else:
-                slantUp = 0
+                pDown1New, pDown2New = ([],[]),([],[])
+                pUp1New, pUp2New = ([],[]),([],[])
 
-            # print(num, slantDown, slantUp)
+            check = 0 if np.array(pDown1New).size == 0 and \
+                         np.array(pDown2New).size == 0 and \
+                         np.array(pUp1New).size == 0 and \
+                         np.array(pUp2New).size == 0 else 1
 
-            if 13 < slantUp < 75 and 13 < slantDown < 75:
-                cross = 1
-            else:
-                cross = 0
-
-
-            choos.append(cross)
-        listAns.append(choos)
-
-        i = [round(90-math.degrees(math.atan2(i[0][0], i[1][0]))) for i in down]
-        for j in i:
-            if j < 75:
-                print(i)
-        # print(sorted(down[0]))
-    return np.array(listAns)
+            d.append(check)
+        dd.append(d)
+    return np.array(dd, dtype=int)
 
 if __name__ == '__main__':
 
@@ -158,28 +159,33 @@ if __name__ == '__main__':
     ansDict = {'a': 0, 'b': 1, 'c': 2, 'd': 3, 'nan': 'nan'}
     ansDict_inv = {ansDict[k]: k for k in ansDict}
 
-# fide true answers to score
     scoreList = []
-    ansInSheetListNew = []
-    ansInSheetList = np.empty((0,1),dtype=int)
-    # ansInSheetList = []
-    # print(len(preAnsInSheet))
+    ansInSheetList = []
+
     for j, i in enumerate(answers['Answers']):
         ans = ansDict[i]
         score = 1 if preAnsInSheet[j, ans] == 1 else 0
         scoreList.append(score)
-        idxs = np.ravel(np.where(preAnsInSheet[j] == 1))
 
-        if idxs.size == 0:
-            idxs = np.nan
-        ansInSheetList = np.append(ansInSheetList, idxs).astype(int)
-    for i in ansInSheetList:
-        if i < 0:
-            i = 'nan'
-        ansInSheetListNew.append(ansDict_inv[i])
+    for ansInSheet in preAnsInSheet:
+        if ansInSheet[0] == 1:
+            ansChar = 'a'
+        elif ansInSheet[1] == 1:
+            ansChar = 'b'
+        elif ansInSheet[2] == 1:
+            ansChar = 'c'
+        elif ansInSheet[3] == 1:
+            ansChar = 'd'
+        else:
+            ansChar = 'nan'
 
-    allSheet = pd.DataFrame({"Ans": ansInSheetListNew,
-                             "T-Ans":answers['Answers'],
+        ansInSheetList.append(ansChar)
+
+    allSheet = pd.DataFrame({"Ans": ansInSheetList,
+                             "T-Ans": answers['Answers'],
                              "Score": scoreList})
+
+    print('='*20)
     print(allSheet)
-    print(f"Score: {sum(scoreList)}")
+    print('='*20)
+    print(f'Total Score: {sum(scoreList)}')
